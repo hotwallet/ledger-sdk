@@ -1,0 +1,22 @@
+{
+  "name": "ledger-sdk",
+  "version": "0.0.0",
+  "description": "Ledger SDK",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotwallet/ledger-sdk.git"
+  },
+  "author": "hotwallet",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hotwallet/ledger-sdk/issues"
+  },
+  "homepage": "https://github.com/hotwallet/ledger-sdk#readme",
+  "dependencies": {
+    "ledgerco": "1.1.3"
+  }
+}

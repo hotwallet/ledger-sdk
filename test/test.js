@@ -1,17 +1,4 @@
-# ledger-sdk
-
-Ledger SDK for Node.js
-
-### Install
-
-```
-npm i ledger-sdk
-```
-
-### Usage
-
-```js
-import LedgerSDK from 'ledger-sdk'
+const LedgerSDK = require('../src')
 
 const ledger = new LedgerSDK()
 
@@ -23,4 +10,3 @@ ledger.on('btc:close', () => console.log('BTC wallet closed'))
 
 ledger.on('ltc:open', () => console.log('LTC wallet opened'))
 ledger.on('ltc:close', () => console.log('LTC wallet closed'))
-```
