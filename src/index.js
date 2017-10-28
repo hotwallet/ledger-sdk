@@ -12,11 +12,17 @@ class LedgerSDK extends EventEmitter {
     this.connected = false
     this.plugged = false
     this.btc = null
-    this.walletType = null // 'btc'
+    this.walletType = null
     this.walletId = null
+  }
 
+  start() {
+    if (this.poller) {
+      throw new Error('LedgerSDK poller already started.')
+    }
+    this.emit('start')
     let i = 0
-    setInterval(() => {
+    this.poller = setInterval(() => {
       i += 1
       switch (i) {
         case 1: return this.pollDevices()
@@ -24,6 +30,15 @@ class LedgerSDK extends EventEmitter {
         default: i = 0
       }
     }, 250)
+  }
+
+  stop() {
+    if (!this.poller) {
+      throw new Error('LedgerSD poller already stopped.')
+    }
+    clearInterval(this.poller)
+    this.poller = null
+    this.emit('stop')
   }
 
   disconnect() {

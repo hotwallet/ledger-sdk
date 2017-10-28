@@ -10,3 +10,7 @@ ledger.on('btc:close', () => console.log('BTC wallet closed'))
 
 ledger.on('ltc:open', () => console.log('LTC wallet opened'))
 ledger.on('ltc:close', () => console.log('LTC wallet closed'))
+
+ledger.start()
+ledger.stop()
+ledger.start()
