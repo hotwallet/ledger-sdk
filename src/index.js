@@ -34,7 +34,7 @@ class LedgerSDK extends EventEmitter {
 
   stop() {
     if (!this.poller) {
-      throw new Error('LedgerSD poller already stopped.')
+      throw new Error('LedgerSDK poller already stopped.')
     }
     clearInterval(this.poller)
     this.poller = null
