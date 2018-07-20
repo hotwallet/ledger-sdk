@@ -1,6 +1,10 @@
 # ledger-sdk
 
-Ledger SDK for Node.js
+Ledger SDK for Chrome browser
+
+### TODO
+
+- Add support for Node.js / Electron
 
 ### Install
 
@@ -15,14 +19,17 @@ import LedgerSDK from 'ledger-sdk'
 
 const ledger = new LedgerSDK()
 
-ledger.on('plug', () => console.log('Ledger plugged in'))
-ledger.on('unplug', () => console.log('Ledger unplugged'))
+ledger.on('BTC:open', data => console.log('BTC open', data))
+ledger.on('BTC:close', () => console.log('BTC close'))
 
-ledger.on('btc:open', () => console.log('BTC wallet opened'))
-ledger.on('btc:close', () => console.log('BTC wallet closed'))
+ledger.on('ETH:open', data => console.log('ETH open', data))
+ledger.on('ETH:close', () => console.log('ETH close'))
 
-ledger.on('ltc:open', () => console.log('LTC wallet opened'))
-ledger.on('ltc:close', () => console.log('LTC wallet closed'))
+ledger.on('LTC:open', data => console.log('LTC open', data))
+ledger.on('LTC:close', () => console.log('LTC close'))
+
+ledger.on('ZEC:open', data => console.log('ZEC open', data))
+ledger.on('ZEC:close', () => console.log('ZEC close'))
 
 ledger.start()
 ```

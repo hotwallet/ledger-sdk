@@ -1,152 +1,109 @@
-const EventEmitter = require('events')
-const util = require('util')
-const Ledger = require('ledgerco')
-const LedgerNode = require('ledgerco/src/ledger-comm-node')
+import Transport from '@ledgerhq/hw-transport-u2f'
+import LedgerBTC from '@ledgerhq/hw-app-btc'
+import LedgerETH from '@ledgerhq/hw-app-eth'
+// import xpubjs from 'xpubjs'
+import EventEmitter from 'events'
+import { detectSymbol, symbols } from './detectSymbol'
+import 'babel-polyfill'
 
-const Btc = Ledger.btc
+const defaultDerivationPath = {
+  BTC: "44'/0'/0'",
+  ETH: "44'/60'/0'"
+}
 
-class LedgerSDK extends EventEmitter {
+const wallets = {
+  BTC: ['BTC', 'LTC', 'ZEC'],
+  ETH: ['ETH', 'ETC']
+}
+
+export default class LedgerSDK extends EventEmitter {
   constructor() {
     super()
-    this.comm = null
-    this.connected = false
-    this.plugged = false
-    this.btc = null
-    this.walletType = null
-    this.walletId = null
+    this.walletIndex = 0
+    this.symbol = null
+    this.busy = false
   }
 
-  start() {
-    if (this.poller) {
-      throw new Error('LedgerSDK poller already started.')
-    }
-    this.emit('start')
-    let i = 0
-    this.poller = setInterval(() => {
-      i += 1
-      switch (i) {
-        case 1: return this.pollDevices()
-        case 2: return this.pollBitcoinCompatibleApp()
-        default: i = 0
+  async createTransport() {
+    this.transport = await Transport.create()
+    // this.transport.setDebugMode(true)
+    this.transport.setExchangeTimeout(2000)
+    this.transport.on('disconnect', () => this.emit('disconnect'))
+  }
+
+  handleSymbol(symbol, data) {
+    this.busy = false
+    if (this.symbol === symbol) return
+    if (symbols.includes(symbol)) {
+      if (this.symbol) {
+        this.emit(`${this.symbol}:close`)
       }
-    }, 250)
+      this.symbol = symbol
+      this.emit(`${symbol}:open`, data)
+    }
+  }
+
+  getWalletIndex() {
+    return Object.keys(wallets).findIndex(w => wallets[w].includes(this.symbol))
+  }
+
+  close(err) {
+    this.busy = false
+    if (!this.symbol) return
+    this.emit(`${this.symbol}:close`)
+    this.symbol = null
+    try { this.transport.close() } catch (error) {}
+  }
+
+  async pingDevice() {
+    if (this.busy) return
+    if (this.symbol) {
+      this.walletIndex = this.getWalletIndex()
+    }
+    this.walletIndex += 1
+    this.busy = true
+    switch (this.walletIndex) {
+      case 1: return this.checkBTC().catch(err => this.close(err))
+      case 2: return this.checkETH().catch(err => this.close(err))
+      default: this.walletIndex = 0
+    }
+    this.busy = false
+  }
+
+  async start() {
+    await this.createTransport()
+    this.pollInterval = setInterval(() => this.pingDevice(), 250)
   }
 
   stop() {
-    if (!this.poller) {
-      throw new Error('LedgerSDK poller already stopped.')
-    }
-    clearInterval(this.poller)
-    this.poller = null
-    this.emit('stop')
+    clearInterval(this.pollInterval)
   }
 
-  disconnect() {
-    this.comm.device.close()
-    this.connected = false
+  async checkBTC() {
+    const btc = new LedgerBTC(this.transport)
+    const derivationPath = defaultDerivationPath.BTC
+    const parentPath = derivationPath.split('/').slice(0, -1).join('/')
+    const { publicKey: parentPubKey } = await btc.getWalletPublicKey(parentPath)
+    const response = await btc.getWalletPublicKey(derivationPath)
+    const { publicKey: pubKey, chainCode, bitcoinAddress: address } = response
+    const symbol = detectSymbol(address)
+    const data = { pubKey, chainCode, address }
+    this.handleSymbol(symbol, data)
   }
 
-  // bitcoin app must be open
-  getFirmwareVersion() {
-    return this.comm.exchange('E0C400000007', [0x9000])
-      .then(hex => console.log('firmware version:', hex))
-      .catch(err => console.log('firmware version:', err))
-  }
-
-  // bitcoin app must be open
-  getRandom() {
-    return this.comm.exchange('E0C000000000', [0x9000])
-      .then(hex => console.log('random:', hex))
-      .catch(err => console.log('random:', err))
-  }
-
-  getDeviceInfo() {
-    return this.comm.device.getDeviceInfo()
-  }
-
-  pollDevices() {
-    return LedgerNode.list_async().then(devices => {
-      if (devices.length) {
-        if (!this.plugged) {
-          this.plugged = true
-          this.emit('plug')
-        }
-        if (this.connected) {
-          return // already connected
-        }
-        return LedgerNode.create_async()
-          .then(comm => {
-            this.comm = comm
-            this.btc = new Btc(this.comm)
-            this.connected = true
-          })
-      }
-      if (this.plugged) {
-        this.disconnect()
-        this.plugged = false
-        this.emit('unplug')
-      }
-    })
-    .catch(console.log)
-  }
-
-  handleClosedBitcoinCompatibleApp() {
-    if (this.walletType === 'btc' && this.walletId) {
-      this.emit('btc:close')
-    }
-    if (this.walletType === 'ltc' && this.walletId) {
-      this.emit('ltc:close')
-    }
-    this.walletType = null
-    this.walletId = null
-    this.disconnect()
-  }
-
-  pollBitcoinCompatibleApp() {
-    const wallets = ['btc', 'ltc']
-    if (!this.connected) {
-      return
-    }
-    if (this.walletType && !wallets.includes(this.walletType)) {
-      return
-    }
-    try {
-      return this.getLedgerId()
-        .then(ledgerId => {
-          if (!ledgerId) {
-            return this.handleClosedBitcoinCompatibleApp()
-          }
-          if (this.walletId !== ledgerId) {
-            switch (ledgerId.charAt(0)) {
-              case '1': this.walletType = 'btc'; break
-              case 'L': this.walletType = 'ltc'; break
-              default: throw new Error('Unsupported wallet.')
-            }
-            // bitcoin-compatible app just opened
-            this.emit(`${this.walletType}:open`)
-            this.walletId = ledgerId
-
-          }
-        })
-    } catch (err) {
-      this.handleClosedBitcoinCompatibleApp()
-    }
-  }
-
-  getLedgerId() {
-    return this.btc.getWalletPublicKey_async('0')
-      .then(pubKey => pubKey.bitcoinAddress)
-  }
-
-  getExternalAddress(n) {
-    return this.btc.getWalletPublicKey_async(`44'/0'/0'/0/${n}`)
-  }
-
-  getInternalAddress(n) {
-    return this.btc.getWalletPublicKey_async(`44'/0'/0'/1/${n}`)
+  async checkETH() {
+    const eth = new LedgerETH(this.transport)
+    await eth.getAppConfiguration()
+    this.busy = false
+    if (this.symbol) return
+    this.busy = true
+    const derivationPath = `${defaultDerivationPath.ETH}/0`
+    const data = await eth.getAddress(derivationPath, false, true)
+    const symbol = detectSymbol(data.address)
+    this.handleSymbol(symbol, data)
   }
 }
 
-util.inherits(LedgerSDK, EventEmitter)
-
-module.exports = LedgerSDK
+if (typeof window !== 'undefined') {
+  window.LedgerSDK = LedgerSDK
+}
