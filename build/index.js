@@ -18,6 +18,10 @@ var _hwAppEth = require('@ledgerhq/hw-app-eth');
 
 var _hwAppEth2 = _interopRequireDefault(_hwAppEth);
 
+var _xpubjs = require('xpubjs');
+
+var _xpubjs2 = _interopRequireDefault(_xpubjs);
+
 var _events = require('events');
 
 var _events2 = _interopRequireDefault(_events);
@@ -35,11 +39,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-// import xpubjs from 'xpubjs'
-
 
 var defaultDerivationPath = {
   BTC: "44'/0'/0'",
+  LTC: "44'/2'/0'",
   ETH: "44'/60'/0'"
 };
 
@@ -229,33 +232,40 @@ var LedgerSDK = function (_EventEmitter) {
     key: 'checkBTC',
     value: function () {
       var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-        var btc, derivationPath, parentPath, _ref5, parentPubKey, response, pubKey, chainCode, address, symbol, data;
+        var btc, _ref5, address, symbol, derivationPath, parentPath, _ref6, parentPubKey, response, pubKey, chainCode, xpub, data;
 
         return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
                 btc = new _hwAppBtc2.default(this.transport);
-                derivationPath = defaultDerivationPath.BTC;
+                _context4.next = 3;
+                return btc.getWalletPublicKey("0'");
+
+              case 3:
+                _ref5 = _context4.sent;
+                address = _ref5.bitcoinAddress;
+                symbol = (0, _detectSymbol.detectSymbol)(address);
+                derivationPath = defaultDerivationPath[symbol];
                 parentPath = derivationPath.split('/').slice(0, -1).join('/');
-                _context4.next = 5;
+                _context4.next = 10;
                 return btc.getWalletPublicKey(parentPath);
 
-              case 5:
-                _ref5 = _context4.sent;
-                parentPubKey = _ref5.publicKey;
-                _context4.next = 9;
+              case 10:
+                _ref6 = _context4.sent;
+                parentPubKey = _ref6.publicKey;
+                _context4.next = 14;
                 return btc.getWalletPublicKey(derivationPath);
 
-              case 9:
+              case 14:
                 response = _context4.sent;
-                pubKey = response.publicKey, chainCode = response.chainCode, address = response.bitcoinAddress;
-                symbol = (0, _detectSymbol.detectSymbol)(address);
-                data = { pubKey: pubKey, chainCode: chainCode, address: address };
+                pubKey = response.publicKey, chainCode = response.chainCode;
+                xpub = (0, _xpubjs2.default)({ symbol: symbol, derivationPath: derivationPath, pubKey: pubKey, chainCode: chainCode, parentPubKey: parentPubKey });
+                data = { pubKey: pubKey, chainCode: chainCode, address: address, xpub: xpub };
 
                 this.handleSymbol(symbol, data);
 
-              case 14:
+              case 19:
               case 'end':
                 return _context4.stop();
             }
@@ -272,7 +282,7 @@ var LedgerSDK = function (_EventEmitter) {
   }, {
     key: 'checkETH',
     value: function () {
-      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
+      var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
         var eth, derivationPath, data, symbol;
         return regeneratorRuntime.wrap(function _callee5$(_context5) {
           while (1) {
@@ -313,7 +323,7 @@ var LedgerSDK = function (_EventEmitter) {
       }));
 
       function checkETH() {
-        return _ref6.apply(this, arguments);
+        return _ref7.apply(this, arguments);
       }
 
       return checkETH;
