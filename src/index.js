@@ -1,13 +1,14 @@
 import Transport from '@ledgerhq/hw-transport-u2f'
 import LedgerBTC from '@ledgerhq/hw-app-btc'
 import LedgerETH from '@ledgerhq/hw-app-eth'
-// import xpubjs from 'xpubjs'
+import xpubjs from 'xpubjs'
 import EventEmitter from 'events'
 import { detectSymbol, symbols } from './detectSymbol'
 import 'babel-polyfill'
 
 const defaultDerivationPath = {
   BTC: "44'/0'/0'",
+  LTC: "44'/2'/0'",
   ETH: "44'/60'/0'"
 }
 
@@ -81,13 +82,15 @@ export default class LedgerSDK extends EventEmitter {
 
   async checkBTC() {
     const btc = new LedgerBTC(this.transport)
-    const derivationPath = defaultDerivationPath.BTC
+    const { bitcoinAddress: address } = await btc.getWalletPublicKey("0'")
+    const symbol = detectSymbol(address)
+    const derivationPath = defaultDerivationPath[symbol]
     const parentPath = derivationPath.split('/').slice(0, -1).join('/')
     const { publicKey: parentPubKey } = await btc.getWalletPublicKey(parentPath)
     const response = await btc.getWalletPublicKey(derivationPath)
-    const { publicKey: pubKey, chainCode, bitcoinAddress: address } = response
-    const symbol = detectSymbol(address)
-    const data = { pubKey, chainCode, address }
+    const { publicKey: pubKey, chainCode } = response
+    const xpub = xpubjs({ symbol, derivationPath, pubKey, chainCode, parentPubKey })
+    const data = { pubKey, chainCode, address, xpub }
     this.handleSymbol(symbol, data)
   }
 
