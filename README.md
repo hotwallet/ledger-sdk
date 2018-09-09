@@ -19,6 +19,8 @@ import LedgerSDK from 'ledger-sdk'
 
 const ledger = new LedgerSDK()
 
+ledger.on('open', data => console.log(`${data.symbol} open`, data))
+
 ledger.on('BTC:open', data => console.log('BTC open', data))
 ledger.on('BTC:close', () => console.log('BTC close'))
 

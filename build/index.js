@@ -109,9 +109,11 @@ var LedgerSDK = function (_EventEmitter) {
       if (_detectSymbol.symbols.includes(symbol)) {
         if (this.symbol) {
           this.emit(this.symbol + ':close');
+          this.emit('close');
         }
         this.symbol = symbol;
         this.emit(symbol + ':open', data);
+        this.emit('open', Object.assign({ symbol: symbol }, data));
       }
     }
   }, {
