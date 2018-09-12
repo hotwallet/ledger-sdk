@@ -1,6 +1,6 @@
 {
   "name": "ledger-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Ledger SDK",
   "main": "build/index.js",
   "scripts": {
