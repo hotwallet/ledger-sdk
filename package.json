@@ -26,7 +26,7 @@
     "@ledgerhq/hw-app-xrp": "^4.19.0",
     "@ledgerhq/hw-transport-u2f": "^4.19.0",
     "babel-polyfill": "^6.26.0",
-    "xpubjs": "^1.1.0"
+    "xpubjs": "^1.1.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
