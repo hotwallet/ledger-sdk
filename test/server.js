@@ -15,3 +15,5 @@ const app = express()
 const server = https.createServer(options, app).listen(port)
 
 app.use(express.static(`${__dirname}/../`))
+
+console.log(`https://localhost:${port}`)

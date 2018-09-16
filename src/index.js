@@ -1,7 +1,7 @@
 import Transport from '@ledgerhq/hw-transport-u2f'
 import LedgerBTC from '@ledgerhq/hw-app-btc'
 import LedgerETH from '@ledgerhq/hw-app-eth'
-import xpubjs from 'xpubjs'
+import { deriveExtendedPublicKey, deriveAddress } from 'xpubjs'
 import EventEmitter from 'events'
 import { detectSymbol, symbols } from './detectSymbol'
 import 'babel-polyfill'
@@ -40,6 +40,10 @@ export default class LedgerSDK extends EventEmitter {
         this.emit(`${this.symbol}:close`)
         this.emit('close')
       }
+      const xpub = data.xpub
+      Object.assign(data, {
+        getAddress: path => deriveAddress({ symbol, xpub, path })
+      })
       this.symbol = symbol
       this.emit(`${symbol}:open`, data)
       this.emit('open', Object.assign({ symbol }, data))
@@ -91,7 +95,7 @@ export default class LedgerSDK extends EventEmitter {
     const { publicKey: parentPubKey } = await btc.getWalletPublicKey(parentPath)
     const response = await btc.getWalletPublicKey(derivationPath)
     const { publicKey: pubKey, chainCode } = response
-    const xpub = xpubjs({ symbol, derivationPath, pubKey, chainCode, parentPubKey })
+    const xpub = deriveExtendedPublicKey({ symbol, derivationPath, pubKey, chainCode, parentPubKey })
     const data = { pubKey, chainCode, address, xpub }
     this.handleSymbol(symbol, data)
   }
