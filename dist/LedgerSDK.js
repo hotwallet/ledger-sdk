@@ -28989,7 +28989,7 @@ var LedgerSDK = function (_EventEmitter) {
               case 2:
                 this.pollInterval = setInterval(function () {
                   return _this5.pingDevice();
-                }, 250);
+                }, 350);
 
               case 3:
               case 'end':

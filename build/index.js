@@ -20,8 +20,6 @@ var _hwAppEth2 = _interopRequireDefault(_hwAppEth);
 
 var _xpubjs = require('xpubjs');
 
-var _xpubjs2 = _interopRequireDefault(_xpubjs);
-
 var _events = require('events');
 
 var _events2 = _interopRequireDefault(_events);
@@ -111,6 +109,12 @@ var LedgerSDK = function (_EventEmitter) {
           this.emit(this.symbol + ':close');
           this.emit('close');
         }
+        var xpub = data.xpub;
+        Object.assign(data, {
+          getAddress: function getAddress(path) {
+            return (0, _xpubjs.deriveAddress)({ symbol: symbol, xpub: xpub, path: path });
+          }
+        });
         this.symbol = symbol;
         this.emit(symbol + ':open', data);
         this.emit('open', Object.assign({ symbol: symbol }, data));
@@ -209,7 +213,7 @@ var LedgerSDK = function (_EventEmitter) {
               case 2:
                 this.pollInterval = setInterval(function () {
                   return _this5.pingDevice();
-                }, 250);
+                }, 350);
 
               case 3:
               case 'end':
@@ -262,7 +266,7 @@ var LedgerSDK = function (_EventEmitter) {
               case 14:
                 response = _context4.sent;
                 pubKey = response.publicKey, chainCode = response.chainCode;
-                xpub = (0, _xpubjs2.default)({ symbol: symbol, derivationPath: derivationPath, pubKey: pubKey, chainCode: chainCode, parentPubKey: parentPubKey });
+                xpub = (0, _xpubjs.deriveExtendedPublicKey)({ symbol: symbol, derivationPath: derivationPath, pubKey: pubKey, chainCode: chainCode, parentPubKey: parentPubKey });
                 data = { pubKey: pubKey, chainCode: chainCode, address: address, xpub: xpub };
 
                 this.handleSymbol(symbol, data);

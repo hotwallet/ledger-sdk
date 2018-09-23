@@ -79,7 +79,7 @@ export default class LedgerSDK extends EventEmitter {
 
   async start() {
     await this.createTransport()
-    this.pollInterval = setInterval(() => this.pingDevice(), 250)
+    this.pollInterval = setInterval(() => this.pingDevice(), 350)
   }
 
   stop() {
