@@ -41,9 +41,11 @@ export default class LedgerSDK extends EventEmitter {
         this.emit('close')
       }
       const xpub = data.xpub
-      Object.assign(data, {
-        getAddress: path => deriveAddress({ symbol, xpub, path })
-      })
+      if (xpub) {
+        Object.assign(data, {
+          getAddress: path => deriveAddress({ symbol, xpub, path })
+        })
+      }
       this.symbol = symbol
       this.emit(`${symbol}:open`, data)
       this.emit('open', Object.assign({ symbol }, data))
@@ -90,6 +92,7 @@ export default class LedgerSDK extends EventEmitter {
     const btc = new LedgerBTC(this.transport)
     const { bitcoinAddress: address } = await btc.getWalletPublicKey("0'")
     const symbol = detectSymbol(address)
+    console.log('symbol:', symbol)
     const derivationPath = defaultDerivationPath[symbol]
     const parentPath = derivationPath.split('/').slice(0, -1).join('/')
     const { publicKey: parentPubKey } = await btc.getWalletPublicKey(parentPath)

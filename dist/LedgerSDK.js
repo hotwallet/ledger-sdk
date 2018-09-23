@@ -28886,11 +28886,13 @@ var LedgerSDK = function (_EventEmitter) {
           this.emit('close');
         }
         var xpub = data.xpub;
-        Object.assign(data, {
-          getAddress: function getAddress(path) {
-            return (0, _xpubjs.deriveAddress)({ symbol: symbol, xpub: xpub, path: path });
-          }
-        });
+        if (xpub) {
+          Object.assign(data, {
+            getAddress: function getAddress(path) {
+              return (0, _xpubjs.deriveAddress)({ symbol: symbol, xpub: xpub, path: path });
+            }
+          });
+        }
         this.symbol = symbol;
         this.emit(symbol + ':open', data);
         this.emit('open', Object.assign({ symbol: symbol }, data));
@@ -29028,18 +29030,20 @@ var LedgerSDK = function (_EventEmitter) {
                 _ref5 = _context4.sent;
                 address = _ref5.bitcoinAddress;
                 symbol = (0, _detectSymbol.detectSymbol)(address);
+
+                console.log('symbol:', symbol);
                 derivationPath = defaultDerivationPath[symbol];
                 parentPath = derivationPath.split('/').slice(0, -1).join('/');
-                _context4.next = 10;
+                _context4.next = 11;
                 return btc.getWalletPublicKey(parentPath);
 
-              case 10:
+              case 11:
                 _ref6 = _context4.sent;
                 parentPubKey = _ref6.publicKey;
-                _context4.next = 14;
+                _context4.next = 15;
                 return btc.getWalletPublicKey(derivationPath);
 
-              case 14:
+              case 15:
                 response = _context4.sent;
                 pubKey = response.publicKey, chainCode = response.chainCode;
                 xpub = (0, _xpubjs.deriveExtendedPublicKey)({ symbol: symbol, derivationPath: derivationPath, pubKey: pubKey, chainCode: chainCode, parentPubKey: parentPubKey });
@@ -29047,7 +29051,7 @@ var LedgerSDK = function (_EventEmitter) {
 
                 this.handleSymbol(symbol, data);
 
-              case 19:
+              case 20:
               case 'end':
                 return _context4.stop();
             }
