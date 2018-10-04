@@ -40,12 +40,6 @@ export default class LedgerSDK extends EventEmitter {
         this.emit(`${this.symbol}:close`)
         this.emit('close')
       }
-      const xpub = data.xpub
-      if (xpub) {
-        Object.assign(data, {
-          getAddress: path => deriveAddress({ symbol, xpub, path })
-        })
-      }
       this.symbol = symbol
       this.emit(`${symbol}:open`, data)
       this.emit('open', Object.assign({ symbol }, data))
@@ -60,6 +54,7 @@ export default class LedgerSDK extends EventEmitter {
     this.busy = false
     if (!this.symbol) return
     this.emit(`${this.symbol}:close`)
+    this.emit('close')
     this.symbol = null
     try { this.transport.close() } catch (error) {}
   }
@@ -72,8 +67,8 @@ export default class LedgerSDK extends EventEmitter {
     this.walletIndex += 1
     this.busy = true
     switch (this.walletIndex) {
-      case 1: return this.checkBTC().catch(err => this.close(err))
-      case 2: return this.checkETH().catch(err => this.close(err))
+      case 1: return this.checkBTC().catch(err => { this.close(err) })
+      case 2: return this.checkETH().catch(err => { this.close(err) })
       default: this.walletIndex = 0
     }
     this.busy = false
@@ -81,25 +76,33 @@ export default class LedgerSDK extends EventEmitter {
 
   async start() {
     await this.createTransport()
-    this.pollInterval = setInterval(() => this.pingDevice(), 350)
+    this.pollInterval = setInterval(() => this.pingDevice(), 1350)
   }
 
   stop() {
     clearInterval(this.pollInterval)
   }
 
-  async checkBTC() {
-    const btc = new LedgerBTC(this.transport)
-    const { bitcoinAddress: address } = await btc.getWalletPublicKey("0'")
-    const symbol = detectSymbol(address)
-    console.log('symbol:', symbol)
-    const derivationPath = defaultDerivationPath[symbol]
+  async getBTCData({ btc, symbol, derivationPath, isSegwit = false }) {
     const parentPath = derivationPath.split('/').slice(0, -1).join('/')
     const { publicKey: parentPubKey } = await btc.getWalletPublicKey(parentPath)
     const response = await btc.getWalletPublicKey(derivationPath)
     const { publicKey: pubKey, chainCode } = response
     const xpub = deriveExtendedPublicKey({ symbol, derivationPath, pubKey, chainCode, parentPubKey })
-    const data = { pubKey, chainCode, address, xpub }
+    const getAddress = path => deriveAddress({ symbol, xpub, path, isSegwit })
+    return { pubKey, parentPubKey, chainCode, xpub, getAddress, derivationPath }
+  }
+
+  async checkBTC() {
+    const data = {}
+    const btc = new LedgerBTC(this.transport)
+    const { bitcoinAddress: address } = await btc.getWalletPublicKey("0'")
+    const symbol = detectSymbol(address)
+    let derivationPath = defaultDerivationPath[symbol]
+    data.legacy = await this.getBTCData({ btc, symbol, derivationPath })
+    derivationPath = derivationPath.replace("44'", "49'")
+    const isSegwit = true
+    data.segwit = await this.getBTCData({ btc, symbol, derivationPath, isSegwit })
     this.handleSymbol(symbol, data)
   }
 

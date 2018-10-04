@@ -8,7 +8,7 @@
     "transpile": "babel src --out-dir build",
     "browserify": "browserify src/index.js -g [ babelify --presets [ \"babel-preset-env\" ] ] -o dist/LedgerSDK.js",
     "minify": "browserify src/index.js -g [ babelify --presets [ \"babel-preset-env\" ] ] | uglifyjs --source-map -m -c -o dist/LedgerSDK.min.js",
-    "test": "npm run browserify && node test/server.js && open https://localhost:8000/test/index.html"
+    "test": "npm run browserify && node test/server.js"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     "@ledgerhq/hw-app-xrp": "^4.19.0",
     "@ledgerhq/hw-transport-u2f": "^4.19.0",
     "babel-polyfill": "^6.26.0",
-    "xpubjs": "^2.0.2"
+    "xpubjs": "^2.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

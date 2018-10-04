@@ -21,10 +21,12 @@ const ledger = new LedgerSDK()
 
 ledger.on('open', data => {
   console.log(`${data.symbol} open`, data)
-  const address = data.getAddress('0/0')
 })
 
-ledger.on('BTC:open', data => console.log('BTC open', data))
+ledger.on('BTC:open', data => {
+  console.log('BTC legacy 0/0', data.legacy.getAddress('0/0'))
+  console.log('BTC segwit 0/0', data.segwit.getAddress('0/0'))
+})
 ledger.on('BTC:close', () => console.log('BTC close'))
 
 ledger.on('LTC:open', data => console.log('LTC open', data))

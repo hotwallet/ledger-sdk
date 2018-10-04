@@ -3,6 +3,7 @@ var ledger = new LedgerSDK()
 var body = document.querySelector('body')
 
 var events = {
+  'open': false,
   'BTC:open': false,
   'BTC:close': false,
   'LTC:open': false,
@@ -23,8 +24,13 @@ function updateMessage() {
 
 Object.keys(events).forEach(event => {
   ledger.on(event, data => {
-    var address = data && data.getAddress('0/0')
-    console.log(event, data || '', address)
+    console.log(event, data || '')
+    if (data && data.legacy) {
+      console.log('legacy 0/0', data.legacy.getAddress('0/0'))
+    }
+    if (data && data.segwit) {
+      console.log('segwit 0/0', data.segwit.getAddress('0/0'))
+    }
     events[event] = true
     updateMessage()
   })

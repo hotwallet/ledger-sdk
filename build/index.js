@@ -109,14 +109,6 @@ var LedgerSDK = function (_EventEmitter) {
           this.emit(this.symbol + ':close');
           this.emit('close');
         }
-        var xpub = data.xpub;
-        if (xpub) {
-          Object.assign(data, {
-            getAddress: function getAddress(path) {
-              return (0, _xpubjs.deriveAddress)({ symbol: symbol, xpub: xpub, path: path });
-            }
-          });
-        }
         this.symbol = symbol;
         this.emit(symbol + ':open', data);
         this.emit('open', Object.assign({ symbol: symbol }, data));
@@ -137,6 +129,7 @@ var LedgerSDK = function (_EventEmitter) {
       this.busy = false;
       if (!this.symbol) return;
       this.emit(this.symbol + ':close');
+      this.emit('close');
       this.symbol = null;
       try {
         this.transport.close();
@@ -171,12 +164,12 @@ var LedgerSDK = function (_EventEmitter) {
 
               case 8:
                 return _context2.abrupt('return', this.checkBTC().catch(function (err) {
-                  return _this4.close(err);
+                  _this4.close(err);
                 }));
 
               case 9:
                 return _context2.abrupt('return', this.checkETH().catch(function (err) {
-                  return _this4.close(err);
+                  _this4.close(err);
                 }));
 
               case 10:
@@ -215,7 +208,7 @@ var LedgerSDK = function (_EventEmitter) {
               case 2:
                 this.pollInterval = setInterval(function () {
                   return _this5.pingDevice();
-                }, 350);
+                }, 1350);
 
               case 3:
               case 'end':
@@ -237,45 +230,43 @@ var LedgerSDK = function (_EventEmitter) {
       clearInterval(this.pollInterval);
     }
   }, {
-    key: 'checkBTC',
+    key: 'getBTCData',
     value: function () {
-      var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-        var btc, _ref5, address, symbol, derivationPath, parentPath, _ref6, parentPubKey, response, pubKey, chainCode, xpub, data;
+      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(_ref4) {
+        var btc = _ref4.btc,
+            symbol = _ref4.symbol,
+            derivationPath = _ref4.derivationPath,
+            _ref4$isSegwit = _ref4.isSegwit,
+            isSegwit = _ref4$isSegwit === undefined ? false : _ref4$isSegwit;
+
+        var parentPath, _ref6, parentPubKey, response, pubKey, chainCode, xpub, getAddress;
 
         return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
-                btc = new _hwAppBtc2.default(this.transport);
-                _context4.next = 3;
-                return btc.getWalletPublicKey("0'");
-
-              case 3:
-                _ref5 = _context4.sent;
-                address = _ref5.bitcoinAddress;
-                symbol = (0, _detectSymbol.detectSymbol)(address);
-
-                console.log('symbol:', symbol);
-                derivationPath = defaultDerivationPath[symbol];
                 parentPath = derivationPath.split('/').slice(0, -1).join('/');
-                _context4.next = 11;
+                _context4.next = 3;
                 return btc.getWalletPublicKey(parentPath);
 
-              case 11:
+              case 3:
                 _ref6 = _context4.sent;
                 parentPubKey = _ref6.publicKey;
-                _context4.next = 15;
+                _context4.next = 7;
                 return btc.getWalletPublicKey(derivationPath);
 
-              case 15:
+              case 7:
                 response = _context4.sent;
                 pubKey = response.publicKey, chainCode = response.chainCode;
                 xpub = (0, _xpubjs.deriveExtendedPublicKey)({ symbol: symbol, derivationPath: derivationPath, pubKey: pubKey, chainCode: chainCode, parentPubKey: parentPubKey });
-                data = { pubKey: pubKey, chainCode: chainCode, address: address, xpub: xpub };
 
-                this.handleSymbol(symbol, data);
+                getAddress = function getAddress(path) {
+                  return (0, _xpubjs.deriveAddress)({ symbol: symbol, xpub: xpub, path: path, isSegwit: isSegwit });
+                };
 
-              case 20:
+                return _context4.abrupt('return', { pubKey: pubKey, parentPubKey: parentPubKey, chainCode: chainCode, xpub: xpub, getAddress: getAddress, derivationPath: derivationPath });
+
+              case 12:
               case 'end':
                 return _context4.stop();
             }
@@ -283,48 +274,49 @@ var LedgerSDK = function (_EventEmitter) {
         }, _callee4, this);
       }));
 
-      function checkBTC() {
-        return _ref4.apply(this, arguments);
+      function getBTCData(_x) {
+        return _ref5.apply(this, arguments);
       }
 
-      return checkBTC;
+      return getBTCData;
     }()
   }, {
-    key: 'checkETH',
+    key: 'checkBTC',
     value: function () {
       var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
-        var eth, derivationPath, data, symbol;
+        var data, btc, _ref8, address, symbol, derivationPath, isSegwit;
+
         return regeneratorRuntime.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                eth = new _hwAppEth2.default(this.transport);
-                _context5.next = 3;
-                return eth.getAppConfiguration();
+                data = {};
+                btc = new _hwAppBtc2.default(this.transport);
+                _context5.next = 4;
+                return btc.getWalletPublicKey("0'");
 
-              case 3:
-                this.busy = false;
-
-                if (!this.symbol) {
-                  _context5.next = 6;
-                  break;
-                }
-
-                return _context5.abrupt('return');
-
-              case 6:
-                this.busy = true;
-                derivationPath = defaultDerivationPath.ETH + '/0';
+              case 4:
+                _ref8 = _context5.sent;
+                address = _ref8.bitcoinAddress;
+                symbol = (0, _detectSymbol.detectSymbol)(address);
+                derivationPath = defaultDerivationPath[symbol];
                 _context5.next = 10;
-                return eth.getAddress(derivationPath, false, true);
+                return this.getBTCData({ btc: btc, symbol: symbol, derivationPath: derivationPath });
 
               case 10:
-                data = _context5.sent;
-                symbol = (0, _detectSymbol.detectSymbol)(data.address);
+                data.legacy = _context5.sent;
+
+                derivationPath = derivationPath.replace("44'", "49'");
+                isSegwit = true;
+                _context5.next = 15;
+                return this.getBTCData({ btc: btc, symbol: symbol, derivationPath: derivationPath, isSegwit: isSegwit });
+
+              case 15:
+                data.segwit = _context5.sent;
 
                 this.handleSymbol(symbol, data);
 
-              case 13:
+              case 17:
               case 'end':
                 return _context5.stop();
             }
@@ -332,8 +324,57 @@ var LedgerSDK = function (_EventEmitter) {
         }, _callee5, this);
       }));
 
-      function checkETH() {
+      function checkBTC() {
         return _ref7.apply(this, arguments);
+      }
+
+      return checkBTC;
+    }()
+  }, {
+    key: 'checkETH',
+    value: function () {
+      var _ref9 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6() {
+        var eth, derivationPath, data, symbol;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                eth = new _hwAppEth2.default(this.transport);
+                _context6.next = 3;
+                return eth.getAppConfiguration();
+
+              case 3:
+                this.busy = false;
+
+                if (!this.symbol) {
+                  _context6.next = 6;
+                  break;
+                }
+
+                return _context6.abrupt('return');
+
+              case 6:
+                this.busy = true;
+                derivationPath = defaultDerivationPath.ETH + '/0';
+                _context6.next = 10;
+                return eth.getAddress(derivationPath, false, true);
+
+              case 10:
+                data = _context6.sent;
+                symbol = (0, _detectSymbol.detectSymbol)(data.address);
+
+                this.handleSymbol(symbol, data);
+
+              case 13:
+              case 'end':
+                return _context6.stop();
+            }
+          }
+        }, _callee6, this);
+      }));
+
+      function checkETH() {
+        return _ref9.apply(this, arguments);
       }
 
       return checkETH;
