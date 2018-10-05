@@ -41,8 +41,15 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var defaultDerivationPath = {
   BTC: "44'/0'/0'",
   LTC: "44'/2'/0'",
-  ETH: "44'/60'/0'"
+  ETH: "44'/60'/0'",
+  ZEC: "44'/133'/0'"
 };
+
+var segwitSymbols = Object.keys(_xpubjs.networks).filter(function (i) {
+  return _xpubjs.networks[i].isSegwitSupported;
+}).map(function (i) {
+  return _xpubjs.networks[i].unit;
+});
 
 var wallets = {
   BTC: ['BTC', 'LTC', 'ZEC'],
@@ -64,6 +71,11 @@ var LedgerSDK = function (_EventEmitter) {
   }
 
   _createClass(LedgerSDK, [{
+    key: 'getSupportedSymbols',
+    value: function getSupportedSymbols() {
+      return _detectSymbol.symbols;
+    }
+  }, {
     key: 'createTransport',
     value: function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
@@ -284,39 +296,55 @@ var LedgerSDK = function (_EventEmitter) {
     key: 'checkBTC',
     value: function () {
       var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
-        var data, btc, _ref8, address, symbol, derivationPath, isSegwit;
+        var btc, _ref8, address, symbol, derivationPath, data, isSegwit;
 
         return regeneratorRuntime.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                data = {};
                 btc = new _hwAppBtc2.default(this.transport);
-                _context5.next = 4;
+                _context5.next = 3;
                 return btc.getWalletPublicKey("0'");
 
-              case 4:
+              case 3:
                 _ref8 = _context5.sent;
                 address = _ref8.bitcoinAddress;
                 symbol = (0, _detectSymbol.detectSymbol)(address);
                 derivationPath = defaultDerivationPath[symbol];
-                _context5.next = 10;
+                data = {};
+
+                if (!segwitSymbols.includes(symbol)) {
+                  _context5.next = 19;
+                  break;
+                }
+
+                _context5.next = 11;
                 return this.getBTCData({ btc: btc, symbol: symbol, derivationPath: derivationPath });
 
-              case 10:
+              case 11:
                 data.legacy = _context5.sent;
 
                 derivationPath = derivationPath.replace("44'", "49'");
                 isSegwit = true;
-                _context5.next = 15;
+                _context5.next = 16;
                 return this.getBTCData({ btc: btc, symbol: symbol, derivationPath: derivationPath, isSegwit: isSegwit });
 
-              case 15:
+              case 16:
                 data.segwit = _context5.sent;
+                _context5.next = 22;
+                break;
 
-                this.handleSymbol(symbol, data);
+              case 19:
+                _context5.next = 21;
+                return this.getBTCData({ btc: btc, symbol: symbol, derivationPath: derivationPath });
 
-              case 17:
+              case 21:
+                data = _context5.sent;
+
+              case 22:
+                return _context5.abrupt('return', this.handleSymbol(symbol, data));
+
+              case 23:
               case 'end':
                 return _context5.stop();
             }

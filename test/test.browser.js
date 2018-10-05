@@ -22,6 +22,8 @@ function updateMessage() {
   })
 }
 
+console.log('supported symbols:', ledger.getSupportedSymbols())
+
 Object.keys(events).forEach(event => {
   ledger.on(event, data => {
     console.log(event, data || '')
@@ -30,6 +32,9 @@ Object.keys(events).forEach(event => {
     }
     if (data && data.segwit) {
       console.log('segwit 0/0', data.segwit.getAddress('0/0'))
+    }
+    if (data && data.getAddress) {
+      console.log('address 0/0', data.getAddress('0/0'))
     }
     events[event] = true
     updateMessage()

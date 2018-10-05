@@ -1,7 +1,7 @@
 import Transport from '@ledgerhq/hw-transport-u2f'
 import LedgerBTC from '@ledgerhq/hw-app-btc'
 import LedgerETH from '@ledgerhq/hw-app-eth'
-import { deriveExtendedPublicKey, deriveAddress } from 'xpubjs'
+import { deriveExtendedPublicKey, deriveAddress, networks } from 'xpubjs'
 import EventEmitter from 'events'
 import { detectSymbol, symbols } from './detectSymbol'
 import 'babel-polyfill'
@@ -9,8 +9,13 @@ import 'babel-polyfill'
 const defaultDerivationPath = {
   BTC: "44'/0'/0'",
   LTC: "44'/2'/0'",
-  ETH: "44'/60'/0'"
+  ETH: "44'/60'/0'",
+  ZEC: "44'/133'/0'"
 }
+
+const segwitSymbols = Object.keys(networks)
+  .filter(i => networks[i].isSegwitSupported)
+  .map(i => networks[i].unit)
 
 const wallets = {
   BTC: ['BTC', 'LTC', 'ZEC'],
@@ -23,6 +28,10 @@ export default class LedgerSDK extends EventEmitter {
     this.walletIndex = 0
     this.symbol = null
     this.busy = false
+  }
+
+  getSupportedSymbols() {
+    return symbols
   }
 
   async createTransport() {
@@ -94,16 +103,20 @@ export default class LedgerSDK extends EventEmitter {
   }
 
   async checkBTC() {
-    const data = {}
     const btc = new LedgerBTC(this.transport)
     const { bitcoinAddress: address } = await btc.getWalletPublicKey("0'")
     const symbol = detectSymbol(address)
     let derivationPath = defaultDerivationPath[symbol]
-    data.legacy = await this.getBTCData({ btc, symbol, derivationPath })
-    derivationPath = derivationPath.replace("44'", "49'")
-    const isSegwit = true
-    data.segwit = await this.getBTCData({ btc, symbol, derivationPath, isSegwit })
-    this.handleSymbol(symbol, data)
+    let data = {}
+    if (segwitSymbols.includes(symbol)) {
+      data.legacy = await this.getBTCData({ btc, symbol, derivationPath })
+      derivationPath = derivationPath.replace("44'", "49'")
+      const isSegwit = true
+      data.segwit = await this.getBTCData({ btc, symbol, derivationPath, isSegwit })
+    } else {
+      data = await this.getBTCData({ btc, symbol, derivationPath })
+    }
+    return this.handleSymbol(symbol, data)
   }
 
   async checkETH() {
