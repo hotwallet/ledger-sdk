@@ -32,5 +32,5 @@ ledger.on('BTC:close', () => console.log('BTC close'))
 ledger.on('LTC:open', data => console.log('LTC open', data))
 ledger.on('LTC:close', () => console.log('LTC close'))
 
-ledger.start()
+ledger.start().catch(err => console.log(err))
 ```
